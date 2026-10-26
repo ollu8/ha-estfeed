@@ -43,7 +43,7 @@ ATTRIBUTION: Final = "Data provided by Elering Estfeed"
 class Resolution(StrEnum):
     """API resolution values."""
 
-    QUARTER_HOUR = "fifteen_min"
+    QUARTER_HOUR = "fifteen_minutes"
     HOUR = "one_hour"
     DAY = "one_day"
     WEEK = "one_week"
