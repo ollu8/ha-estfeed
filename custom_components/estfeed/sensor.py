@@ -63,6 +63,7 @@ def sum_for_period(
     *,
     now: datetime,
     tz: ZoneInfo,
+    commodity_type: CommodityType = CommodityType.ELECTRICITY,
 ) -> float:
     """Sum kWh/m³ values that fall within the given local period."""
     start_local, end_local = window_for_period(period, now=now, tz=tz)
@@ -71,7 +72,7 @@ def sum_for_period(
     total = 0.0
     for ival in intervals:
         if start_utc <= ival.period_start < end_utc:
-            v = interval_value(ival, kind)
+            v = interval_value(ival, kind, commodity_type)
             if v is not None:
                 total += float(v)
     return total
@@ -136,7 +137,17 @@ class LaggingSensor(_EstfeedEntity, SensorEntity):
         bucket = self._bucket
         tz = ZoneInfo(self.coordinator.hass.config.time_zone or "UTC")
         now = datetime.now(tz=UTC)
-        return round(sum_for_period(bucket, self._kind, self._period, now=now, tz=tz), 3)
+        return round(
+            sum_for_period(
+                bucket,
+                self._kind,
+                self._period,
+                now=now,
+                tz=tz,
+                commodity_type=self._meter.commodity_type,
+            ),
+            3,
+        )
 
     @property
     def extra_state_attributes(self) -> dict[str, str]:

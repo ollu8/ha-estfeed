@@ -38,6 +38,7 @@ from .const import (
     MAX_DAYS_PER_REQUEST,
     ROLLING_CACHE_DAYS,
     UPDATE_INTERVAL,
+    CommodityType,
     Kind,
     Resolution,
 )
@@ -648,7 +649,9 @@ class EstfeedCoordinator(DataUpdateCoordinator[None]):
             # lose data once a long-running baseline pushes past 62 days.
             if baseline is None or expiring.period_start < baseline.reset_at:
                 continue
-            value = interval_value(expiring, kind)
+            meter = next((m for m in self.meters if m.eic == eic), None)
+            comm_type = meter.commodity_type if meter else CommodityType.ELECTRICITY
+            value = interval_value(expiring, kind, comm_type)
             if value is None:
                 continue
             self.baselines[(eic, kind)] = CumulativeBaseline(
@@ -669,11 +672,13 @@ class EstfeedCoordinator(DataUpdateCoordinator[None]):
         baseline = self.baselines.get((eic, kind))
         if baseline is None:
             return None
+        meter = next((m for m in self.meters if m.eic == eic), None)
+        comm_type = meter.commodity_type if meter else CommodityType.ELECTRICITY
         total = baseline.frozen_sum
         for ival in self.cache.get((eic, kind), ()):
             if ival.period_start < baseline.reset_at:
                 continue
-            value = interval_value(ival, kind)
+            value = interval_value(ival, kind, comm_type)
             if value is None:
                 continue
             total += float(value)

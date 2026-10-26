@@ -100,6 +100,9 @@ def interval_value(
         if commodity_type == CommodityType.NATURAL_GAS:
             return interval.consumption_m3 if interval.consumption_m3 is not None else interval.consumption_kwh
         return interval.consumption_kwh if interval.consumption_kwh is not None else interval.consumption_m3
+    if commodity_type == CommodityType.NATURAL_GAS:
+        return interval.production_m3 if interval.production_m3 is not None else interval.production_kwh
+    return interval.production_kwh if interval.production_kwh is not None else interval.production_m3
 
 
 @dataclass(frozen=True, slots=True)

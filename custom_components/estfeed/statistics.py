@@ -12,7 +12,7 @@ from homeassistant.components.recorder.statistics import async_add_external_stat
 from homeassistant.core import HomeAssistant
 
 from .api import AccountingInterval, interval_value
-from .const import DOMAIN, Kind
+from .const import DOMAIN, CommodityType, Kind
 from .pricing import compute_cost_rows, compute_cost_rows_from_hourly
 
 # HA 2026.11 will require `mean_type` in StatisticMetaData; older HA versions
@@ -62,6 +62,7 @@ def compute_statistic_rows(
     intervals: list[AccountingInterval],
     kind: Kind,
     prior_sum: float,
+    commodity_type: CommodityType = CommodityType.ELECTRICITY,
 ) -> list[StatisticData]:
     """Build cumulative-sum statistic rows from raw intervals.
 
@@ -75,7 +76,7 @@ def compute_statistic_rows(
     # Aggregate values into hourly buckets keyed by snapped start.
     hourly: dict[Any, float] = {}
     for ival in intervals:
-        value = interval_value(ival, kind)
+        value = interval_value(ival, kind, commodity_type)
         if value is None:
             continue
         bucket = ival.period_start.replace(minute=0, second=0, microsecond=0)
@@ -113,7 +114,10 @@ async def async_write_meter_statistics(
     in as ``prior_sum`` for the next chunk to avoid a read-after-write hazard
     against HA's recorder (which may not flush statistics writes synchronously).
     """
-    rows = compute_statistic_rows(intervals, stream.kind, prior_sum=prior_sum)
+    comm_type = CommodityType.NATURAL_GAS if stream.unit == "m³" else CommodityType.ELECTRICITY
+    rows = compute_statistic_rows(
+        intervals, stream.kind, prior_sum=prior_sum, commodity_type=comm_type
+    )
     if not rows:
         return prior_sum
     metadata: StatisticMetaData = {
