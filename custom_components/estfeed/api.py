@@ -90,19 +90,16 @@ class AccountingInterval:
         )
 
 
-def interval_value(interval: AccountingInterval, kind: Kind) -> float | None:
-    """Return the kWh/m³ value for a kind, falling back across units.
-
-    Single canonical implementation shared by the coordinator, statistics
-    writer, pricing helpers, and sensors.
-    """
+def interval_value(
+    interval: AccountingInterval, 
+    kind: Kind, 
+    commodity_type: CommodityType = CommodityType.ELECTRICITY
+) -> float | None:
     if kind == Kind.CONSUMPTION:
-        if interval.consumption_kwh is not None:
-            return interval.consumption_kwh
-        return interval.consumption_m3
-    if interval.production_kwh is not None:
-        return interval.production_kwh
-    return interval.production_m3
+        # Gaasi puhul võtame m³, elektri puhul kWh:
+        if commodity_type == CommodityType.NATURAL_GAS:
+            return interval.consumption_m3 if interval.consumption_m3 is not None else interval.consumption_kwh
+        return interval.consumption_kwh if interval.consumption_kwh is not None else interval.consumption_m3
 
 
 @dataclass(frozen=True, slots=True)
